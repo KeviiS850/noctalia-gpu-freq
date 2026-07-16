@@ -1,0 +1,27 @@
+{
+  "id": "gpu-freq",
+  "name": "GPU Freq",
+  "version": "0.1.0",
+  "minNoctaliaVersion": "4.7.6",
+  "author": "keviis850",
+  "license": "MIT",
+  "repository": "https://github.com/keviis850/noctalia-gpu-freq",
+  "description": "GPU current, min, boost and max frequency readout with utilization.",
+  "tags": ["Bar", "System"],
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "panel": "Panel.qml"
+  },
+  "dependencies": {
+    "plugins": []
+  },
+  "metadata": {
+    "defaultSettings": {
+      "showMax": true,
+      "showMin": false,
+      "showBoost": false,
+      "showUtil": true
+    }
+  }
+}
