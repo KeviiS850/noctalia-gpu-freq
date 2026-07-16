@@ -1,0 +1,12 @@
+# Intel iGPU frequency sysfs permissions for Noctalia gpu-freq plugin
+# Allows reading /sys/class/drm/card*/gt_*_freq_mhz files without root
+# 
+# Install:
+#   sudo cp 99-intel-gpu-perms.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Verify:
+#   cat /sys/class/drm/card1/gt_cur_freq_mhz
+
+SUBSYSTEM=="drm", KERNEL=="card*", RUN+="/bin/chmod 644 /sys/class/drm/%k/gt_*_freq_mhz"
+SUBSYSTEM=="drm", KERNEL=="card*", RUN+="/bin/chmod 644 /sys/class/drm/%k/gt_*_freq_mhz"
