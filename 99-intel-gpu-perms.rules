@@ -1,0 +1,5 @@
+# Intel iGPU frequency sysfs permissions for Noctalia gpu-freq plugin
+# Allows reading /sys/class/drm/card*/gt_*_freq_mhz files without root.
+# Applied when the DRM device appears.
+
+SUBSYSTEM=="drm", KERNEL=="card[0-9]*", ACTION=="add", RUN+="/bin/chmod 644 /sys/class/drm/%k/gt_*_freq_mhz"

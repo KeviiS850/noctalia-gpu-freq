@@ -1,0 +1,19 @@
+# Quickshell hot-reload artifacts
+.qml.cache/
+.qsbuild/
+*.qmlc
+*.jsc
+
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backup directory
+.backups/
+
+# Generated icon dumps
+*.png.bak
