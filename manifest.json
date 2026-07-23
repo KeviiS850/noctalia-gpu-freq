@@ -11,10 +11,13 @@
   "icon": "device-desktop",
   "category": "system",
   "entryPoints": {
-    "barWidget": "BarWidget.qml",
     "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
     "panel": "Panel.qml",
     "settings": "PluginSettings.qml"
+  },
+  "dependencies": {
+    "plugins": []
   },
   "metadata": {
     "defaultSettings": {
@@ -25,6 +28,15 @@
       "showBoost": false,
       "showUtil": true,
       "pollIntervalMs": 1500
+    },
+    "settingDescriptions": {
+      "gpuCard": "DRM card identifier (e.g., card0, card1). Leave empty for auto-detection.",
+      "autoDetectCard": "Automatically detect an available Intel iGPU if the configured card is missing.",
+      "showMax": "Display maximum frequency alongside current frequency.",
+      "showMin": "Display minimum frequency (if available).",
+      "showBoost": "Display boost frequency (if available).",
+      "showUtil": "Show GPU utilization percentage when available.",
+      "pollIntervalMs": "Polling interval in milliseconds for reading sysfs files."
     }
   }
 }

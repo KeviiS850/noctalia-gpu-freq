@@ -1,91 +1,152 @@
-import QtQuick 2.15
-import Style 1.0
-import Color 1.0
-import NIcon 1.0
-import NText 1.0
-import TooltipService 1.0
-import BarService 1.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Quickshell
+import qs.Commons
+import qs.Services.UI
+import qs.Widgets
 
 Item {
-    readonly property string displayText: {
-        if (showUtil) {
-            return "GPU " + String(Math.round(utilizationPercent)) + "% • " + actFreq + " MHz"
-        } else if (showMax) {
-            return curFreq + " / " + maxFreq + " MHz"
-        } else if (showBoost) {
-            return curFreq + " / " + boostFreq + " MHz"
-        } else {
-            return curFreq + " MHz"
-        }
+ id: root
+ property var pluginApi: null
+ property string widgetId: ""
+ property string section: ""
+ property int sectionWidgetIndex: -1
+ property int sectionWidgetsCount: 0
+
+ // Screen-specific styling helpers
+ readonly property string screenName: pluginApi?.screen?.name ?? ""
+ readonly property string barPosition: Settings.getBarPositionForScreen(screenName)
+ readonly property bool isVertical: barPosition === "left" || barPosition === "right"
+ readonly property real capsuleHeight: Style.getCapsuleHeightForScreen(screenName)
+ readonly property real barFontSize: Style.getBarFontSizeForScreen(screenName)
+
+ // Settings from plugin
+ property bool compactMode: pluginApi?.mainInstance?.pluginApi?.pluginSettings?.compactMode ?? true
+ property bool showMax: pluginApi?.mainInstance?.pluginApi?.pluginSettings?.showMax ?? true
+ property bool showMin: pluginApi?.mainInstance?.pluginApi?.pluginSettings?.showMin ?? false
+ property bool showBoost: pluginApi?.mainInstance?.pluginApi?.pluginSettings?.showBoost ?? false
+ property bool showUtil: pluginApi?.mainInstance?.pluginApi?.pluginSettings?.showUtil ?? true
+ property string gpuCard: pluginApi?.mainInstance?.gpuCard ?? "card1"
+
+ // Direct bindings to the singleton Main instance
+ readonly property string curFreq: pluginApi?.mainInstance?.curFreq ?? "—"
+ readonly property string maxFreq: pluginApi?.mainInstance?.maxFreq ?? "—"
+ readonly property string minFreq: pluginApi?.mainInstance?.minFreq ?? "—"
+ readonly property string boostFreq: pluginApi?.mainInstance?.boostFreq ?? "—"
+ readonly property string actFreq: pluginApi?.mainInstance?.actFreq ?? "—"
+ readonly property string utilization: pluginApi?.mainInstance?.utilization ?? "—"
+ readonly property bool hasValidData: pluginApi?.mainInstance?.hasValidData ?? false
+
+ // Derived UI metrics
+ readonly property real iconSize: Style.toOdd(capsuleHeight * 0.55)
+
+ // Compute text widths
+ readonly property string freqText: curFreq !== "—" ? curFreq.replace(" MHz", "") + " MHz" : "—"
+ readonly property string maxText: (showMax && maxFreq !== "—" && !compactMode) ? (" / " + maxFreq) : ""
+ readonly property string utilText: (showUtil && utilization !== "—") ? (" " + utilization) : ""
+
+ // Width estimation
+ readonly property real textWidth: {
+  var base = freqText.length * (compactMode ? 5.5 : 6) + maxText.length * (compactMode ? 5 : 6) + utilText.length * (compactMode ? 5 : 6)
+  return base
+ }
+
+ readonly property real contentWidth: {
+  if (isVertical) return capsuleHeight
+  return iconSize + Style.marginS + textWidth + Style.marginS
+ }
+ readonly property real contentHeight: isVertical ? capsuleHeight * 2 : capsuleHeight
+
+ implicitWidth: compactMode ? 90 : 110
+ implicitHeight: Math.max(contentHeight, 22)
+
+ // Text-only widget — no background
+Row {
+id: row
+anchors.centerIn: parent
+spacing: compactMode ? 2 : 3
+
+// Tech label — always visible so user knows it's Intel UHD GPU
+Text {
+        id: labelText
+        text: "Intel UHD GPU"
+        font.family: Settings.data.ui.fontDefault
+        font.pixelSize: compactMode ? 11 : 12
+        color: "#6c7086"
+        verticalAlignment: Text.AlignVCenter
     }
 
-    // Robust sizing: use bar metrics with safe fallbacks to avoid zero size
-    readonly property real barHeight: (Style.barHeight && Style.barHeight > 0) ? Style.barHeight : 24
-    readonly property real barFontSize: (Style.barFontSize && Style.barFontSize > 0) ? Style.barFontSize : 10
-    readonly property real capsuleHeight: barHeight
-    readonly property real iconSize: Style.toOdd(capsuleHeight * 0.55)
+// Separator
+Text {
+text: "|"
+font.pixelSize: compactMode ? 8 : 9
+font.bold: true
+color: "#6c7086"
+verticalAlignment: Text.AlignVCenter
+}
 
-    readonly property real contentWidth: iconSize + Style.marginS + labelText.implicitWidth + Style.marginM
-    readonly property real contentHeight: capsuleHeight
+// Current frequency
+Text {
+    id: curText
+    text: freqText
+    font.family: Settings.data.ui.fontDefault
+    font.pixelSize: compactMode ? 12 : 13
+    font.bold: true
+    color: Color.mOnSurface
+    verticalAlignment: Text.AlignVCenter
+}
 
-    implicitWidth: Math.max(contentWidth, 60) // Ensure minimum width
-    implicitHeight: contentHeight
+// Max frequency (non-compact only)
+Text {
+id: maxTextItem
+text: maxText
+font.family: Settings.data.ui.fontDefault
+font.pixelSize: compactMode ? 9 : 10
+color: Color.mOnSurface
+verticalAlignment: Text.AlignVCenter
+opacity: 0.7
+}
 
-    Rectangle {
-        id: capsule
-        x: Style.pixelAlignCenter(parent.width, width)
-        y: Style.pixelAlignCenter(parent.height, height)
-        width: root.contentWidth
-        height: root.contentHeight
-        radius: Style.radiusM
-        color: Style.capsuleColor
-        border.color: Style.capsuleBorderColor
-        border.width: Style.capsuleBorderWidth
+// Utilization — green tech accent
+Text {
+id: utilTextItem
+text: utilText
+font.family: Settings.data.ui.fontDefault
+font.pixelSize: compactMode ? 9 : 10
+color: "#00ff7f"
+font.bold: true
+verticalAlignment: Text.AlignVCenter
+}
+}
 
-        RowLayout {
-            anchors.centerIn: parent
-            spacing: Style.marginS
+// Tooltip with full details
+MouseArea {
+id: tooltipArea
+anchors.fill: parent
+hoverEnabled: true
+onEntered: TooltipService.show(root, tooltipText, BarService.getTooltipDirection(screenName))
+onExited: TooltipService.hide()
+}
 
-            NIcon {
-                id: iconElement
-                icon: "gpu"
-                pointSize: root.iconSize
-                color: Color.mOnSurfaceVariant
-            }
+ readonly property string tooltipText: {
+  if (!hasValidData) return "Intel UHD GPU: No data"
+  return "Intel UHD GPU (" + gpuCard + ")\n" +
+   "Current: " + curFreq + "\n" +
+   "Maximum: " + maxFreq + "\n" +
+   "Minimum: " + minFreq + "\n" +
+   "Boost: " + boostFreq + "\n" +
+   "Active: " + actFreq + "\n" +
+   "Utilization: " + utilization + "\n" +
+   "Data valid: " + (hasValidData ? "Yes" : "No") + "\n" +
+   "Updated: " + new Date().toLocaleTimeString()
+ }
 
-            NText {
-                id: labelText
-                text: root.displayText
-                pointSize: root.barFontSize
-                applyUiScale: false
-                color: Color.mOnSurface
-                elide: Text.ElideRight
-            }
-        }
-    }
-
-    // Hover-only for tooltip, no clicks
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.ArrowCursor
-        acceptedButtons: Qt.NoButton
-
-        onEntered: TooltipService.show(root, tooltipText, BarService.getTooltipDirection(screen?.name))
-        onExited: TooltipService.hide()
-    }
-
-    // Tooltip
-    readonly property string tooltipText: {
-        const parts = [
-            "GPU: " + displayText,
-            "Cur: " + curFreq + " MHz",
-            "Act: " + actFreq + " MHz",
-            "Max: " + maxFreq + " MHz",
-            "Min: " + minFreq + " MHz",
-            "Boost: " + boostFreq + " MHz",
-            "Util: " + String(Math.round(utilizationPercent)) + "%"
-        ]
-        return parts.join("\n")
-    }
+ Component.onCompleted: {
+  console.debug("GPU Freq widget initialized:", "screenName:", screenName, "isVertical:", isVertical,
+   "capsuleHeight:", capsuleHeight, "barFontSize:", barFontSize,
+   "curFreq:", curFreq, "maxFreq:", maxFreq, "utilization:", utilization,
+   "hasValidData:", hasValidData, "gpuCard:", gpuCard,
+   "hasPluginApi:", !!pluginApi, "hasMainInstance:", !!(pluginApi?.mainInstance))
+ }
 }
